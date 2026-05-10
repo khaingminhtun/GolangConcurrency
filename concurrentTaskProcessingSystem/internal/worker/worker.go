@@ -16,15 +16,7 @@ func StartWorker(
 	defer wg.Done()
 
 	for {
-		j, ok := q.Dequeue()
-		if !ok {
-			fmt.Printf(
-				"Worker %d: no more jobs\n",
-				id,
-			)
-			return
-		}
-
+		j := q.Dequeue()
 		fmt.Printf(
 			"Worker %d processing job %d: %s\n",
 			id,

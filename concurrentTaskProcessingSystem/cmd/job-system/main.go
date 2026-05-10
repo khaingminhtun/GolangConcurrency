@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/khaingminhtun/job-system/internal/job"
 	"github.com/khaingminhtun/job-system/internal/queue"
@@ -10,15 +11,7 @@ import (
 )
 
 func main() {
-	q := &queue.JobQueue{}
-
-	// crate jobs
-	for i := 1; i <= 30; i++ {
-		q.Enqueue(job.Job{
-			ID:   i,
-			Data: fmt.Sprintf("task-%d", i),
-		})
-	}
+	q := queue.NewJobQueue()
 
 	var wg sync.WaitGroup
 
@@ -26,11 +19,23 @@ func main() {
 
 	wg.Add(workerCount)
 
+	// Start workers
 	for i := 1; i <= workerCount; i++ {
 		go worker.StartWorker(i, q, &wg)
 	}
 
-	wg.Wait()
+	// Producer (simulate streaming jobs)
+	for i := 1; i <= 10; i++ {
+		q.Enqueue(job.Job{
+			ID:   i,
+			Data: fmt.Sprintf("job-%d", i),
+		})
 
-	fmt.Println("All workers completed")
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	// Wait so workers can process
+	time.Sleep(5 * time.Second)
+
+	fmt.Println("main finished producing")
 }
