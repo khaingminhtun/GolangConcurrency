@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -9,6 +10,7 @@ import (
 )
 
 func StartWorker(
+	ctx context.Context,
 	id int,
 	q *queue.JobQueue,
 	wg *sync.WaitGroup) {
@@ -16,7 +18,20 @@ func StartWorker(
 	defer wg.Done()
 
 	for {
-		j := q.Dequeue()
+
+		// check shutdown first
+		select {
+		case <-ctx.Done():
+			fmt.Printf("Worker %d shutting down\n", id)
+			return
+		default:
+		}
+		// try get job
+		j, ok := q.Dequeue(ctx)
+		if !ok {
+			fmt.Printf("Worker %d shutting down\n", id)
+			return
+		}
 		fmt.Printf(
 			"Worker %d processing job %d: %s\n",
 			id,
