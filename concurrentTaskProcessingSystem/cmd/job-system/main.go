@@ -11,6 +11,7 @@ import (
 
 	"github.com/khaingminhtun/job-system/internal/job"
 	"github.com/khaingminhtun/job-system/internal/queue"
+	"github.com/khaingminhtun/job-system/internal/stats"
 	"github.com/khaingminhtun/job-system/internal/worker"
 )
 
@@ -25,9 +26,11 @@ func main() {
 
 	wg.Add(workerCount)
 
+	statistics := &stats.Stats{}
+
 	// Start workers
 	for i := 1; i <= workerCount; i++ {
-		go worker.StartWorker(ctx, i, q, &wg)
+		go worker.StartWorker(ctx, i, q, statistics, &wg)
 	}
 
 	// handle os signals
@@ -43,6 +46,23 @@ func main() {
 			})
 
 			time.Sleep(500 * time.Millisecond)
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			default:
+				fmt.Printf(
+					"\n[STATS] Processed Jobs: %d\n",
+					statistics.GetProcessed(),
+				)
+
+				time.Sleep(2 * time.Second)
+			}
 		}
 	}()
 

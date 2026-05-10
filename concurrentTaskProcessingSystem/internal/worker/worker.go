@@ -6,13 +6,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/khaingminhtun/job-system/internal/pool"
 	"github.com/khaingminhtun/job-system/internal/queue"
+	"github.com/khaingminhtun/job-system/internal/stats"
 )
 
 func StartWorker(
 	ctx context.Context,
 	id int,
 	q *queue.JobQueue,
+	stats *stats.Stats,
 	wg *sync.WaitGroup) {
 
 	defer wg.Done()
@@ -32,6 +35,12 @@ func StartWorker(
 			fmt.Printf("Worker %d shutting down\n", id)
 			return
 		}
+
+		// get reusable buffer
+		buf := pool.BufferPool.Get().([]byte)
+
+		// simulate processing
+		copy(buf, j.Data)
 		fmt.Printf(
 			"Worker %d processing job %d: %s\n",
 			id,
@@ -40,5 +49,9 @@ func StartWorker(
 		)
 
 		time.Sleep(time.Second)
+		stats.IncrementProcessed()
+
+		// return buffer to pool
+		pool.BufferPool.Put(buf)
 	}
 }
